@@ -31,13 +31,38 @@ namespace GameHook
     // Injections and scanned addresses.
     extern "C"
     {
+        UINT_PTR hitStreakJmpAddress = 0;
         EXPORT BYTE* hitStreakAddress = nullptr;
+
+        BYTE shouldSkip = 0;
+        INSTRUCTIONSET HitStreakHook() // Doesn't really work how I thought it would.
+        {
+            __asm__
+            (
+                "push %rax\n\t"
+                "mov shouldSkip, %al\n\t"
+                "test %al, %al\n\t"
+                "je 1f\n\t"
+                "xor %r8d, %r8d\n\t"
+                "mov $0, %al\n\t"
+                "mov %al, shouldSkip\n\t"
+                "jmp 2f\n\t"
+                "1:\n\t"
+                "mov $1, %al\n\t"
+                "mov %al, shouldSkip\n\t"
+                "2:\n\t"
+                "pop %rax\n\t"
+                "mov %r10, %rcx\n\t"
+                "jmp *hitStreakJmpAddress"
+            );
+        }
     }
 
-    bool CreateHitStreakHook()
+    void CreateHitStreakHook()
     {
         hitStreakAddress = pScanner.PerformModuleScan(bytePattern, patternLength, patternOffset, moduleName);
-        return hitStreakAddress != nullptr;
+        hitStreakJmpAddress = (UINT_PTR)hitStreakAddress + 6;
+        // MH_CreateHook(hitStreakAddress, (LPVOID)HitStreakHook, nullptr);
     }
 
     // Hook startup.
@@ -45,5 +70,6 @@ namespace GameHook
     {
         CreateHitStreakHook();
         Set(hitStreakAddress, {0x90, 0x90, 0x90});
+        // MH_EnableHook(MH_ALL_HOOKS);
     }
 }

@@ -9,7 +9,7 @@
         {
         }
 
-        bool CreateHitStreakHook();
+        void CreateHitStreakHook();
         void CreateGameHooks();
     }
 #endif
